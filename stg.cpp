@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 	fclose(fp);
 
 	in_head.open(instring_music, ios::binary|ios::in); 
-	in_head.read(B,54); // читать расширенный заголовок
+	in_head.read(B,54); // С‡РёС‚Р°С‚СЊ СЂР°СЃС€РёСЂРµРЅРЅС‹Р№ Р·Р°РіРѕР»РѕРІРѕРє
 	in_head.close();
 
 	in.open(instring_music, ios::binary|ios::in);
@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 	in.ignore(4); 
 	in.read((char*)&size_wav, 4);
 	for (int i = 0; i<4; i++)
-		in.read((char*)&SectionWave[i], 1); //проверяем секцию Wave
+		in.read((char*)&SectionWave[i], 1); //РїСЂРѕРІРµСЂСЏРµРј СЃРµРєС†РёСЋ Wave
 
 	if ((SectionWave[0] !='W') || (SectionWave[1] != 'A') || (SectionWave[2] != 'V') || (SectionWave[3] != 'E')) 
 	{
@@ -78,14 +78,14 @@ int main(int argc, char* argv[])
 	char *Buffer = new char [size_wav];
 	Bits_Wav *_bits = new Bits_Wav[size_wav];
 
-	in.read(Buffer,size_wav); // чтение файла в Buffer
+	in.read(Buffer,size_wav); // С‡С‚РµРЅРёРµ С„Р°Р№Р»Р° РІ Buffer
 	in.close();
 
-	Byte_to_bits(size_wav, Buffer, _bits, NULL, 0); //   преобразования значений в буфере с байт в биты
+	Byte_to_bits(size_wav, Buffer, _bits, NULL, 0); //   РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёСЏ Р·РЅР°С‡РµРЅРёР№ РІ Р±СѓС„РµСЂРµ СЃ Р±Р°Р№С‚ РІ Р±РёС‚С‹
 
 	intext.open(instring_text, ios::in); 
 	intext.seekg (0, std::ios::end);
-    size_text = intext.tellg(); // размер текста
+    size_text = intext.tellg(); // СЂР°Р·РјРµСЂ С‚РµРєСЃС‚Р°
 
 	check = cross_check(size_wav, size_text); // if size_text == 0 and size_text*4 >= size_wav
 	if (check == 0)
@@ -98,19 +98,19 @@ int main(int argc, char* argv[])
 	char *Buffer_text = new char [size_text];
 
 	intext.seekg(0);
-	intext.read(Buffer_text, size_text); // чтение файла в буфер_текст
+	intext.read(Buffer_text, size_text); // С‡С‚РµРЅРёРµ С„Р°Р№Р»Р° РІ Р±СѓС„РµСЂ_С‚РµРєСЃС‚
 	intext.close();
 
 	Bits_text *_bits_t = new Bits_text[size_text];
 	Bit_pack * b_p = new Bit_pack[size_text*4];
 
-	Byte_to_bits(size_text, Buffer_text, NULL, _bits_t, 1); // преобразования значений в Buffer_text из байтов в _bits_t
+	Byte_to_bits(size_text, Buffer_text, NULL, _bits_t, 1); // РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёСЏ Р·РЅР°С‡РµРЅРёР№ РІ Buffer_text РёР· Р±Р°Р№С‚РѕРІ РІ _bits_t
 
 	Make_pack_of_two(size_text, _bits_t, b_p);
 
-	Substitute_information_bits(size_text, b_p, _bits); // подставляем инф биты в наименее значимые биты музыкального файла 
+	Substitute_information_bits(size_text, b_p, _bits); // РїРѕРґСЃС‚Р°РІР»СЏРµРј РёРЅС„ Р±РёС‚С‹ РІ РЅР°РёРјРµРЅРµРµ Р·РЅР°С‡РёРјС‹Рµ Р±РёС‚С‹ РјСѓР·С‹РєР°Р»СЊРЅРѕРіРѕ С„Р°Р№Р»Р° 
 
-	Bits_to_bytes (size_text, Buffer, _bits); // преодбразование значений из битоы в байты in Buffer
+	Bits_to_bytes (size_text, Buffer, _bits); // РїСЂРµРѕРґР±СЂР°Р·РѕРІР°РЅРёРµ Р·РЅР°С‡РµРЅРёР№ РёР· Р±РёС‚РѕС‹ РІ Р±Р°Р№С‚С‹ in Buffer
 
 	if (strcmp(argv[1],argv[3]) == 0)
 	{
