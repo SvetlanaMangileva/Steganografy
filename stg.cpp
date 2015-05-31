@@ -1,6 +1,8 @@
-С„Рё#include <iostream>
+#include <iostream>
 #include <fstream>
 #include <stdio.h>
+#include <cstring>
+#include <stdint.h>
 using namespace std;
 
 struct Bits_Wav
@@ -16,14 +18,10 @@ struct Bit_pack
 	bool pack[2];
 };
 
-bool checkInWav(FILE *fp, char instring_music[120]);
-bool checkInTxt(FILE *fp, char instring_text[120]);
-bool checkSize(int size_wav);
 void Byte_to_bits(int size, char Buffer[], Bits_Wav _bits[], Bits_text _bits_t[], int key);
 void Bits_to_bytes (int size_text, char Buffer[], Bits_Wav _bits[]);
 void Make_pack_of_two(int size_text, Bits_text _bits_t[], Bit_pack b_p[]);
 void Substitute_information_bits(int size_text, Bit_pack b_p[], Bits_Wav _bits[]);
-bool cross_check(int size_wav, int size_text);
 
 int main(int argc, char* argv[])
 {
@@ -41,39 +39,53 @@ int main(int argc, char* argv[])
 	bool check = 0, entry = 0;
 
 	strcpy(instring_music, argv[1]);
-	check = checkInWav(fp, instring_music); //С‡С‚РµРЅРёРµ С„Р°Р№Р»Р°
-	if (check == 0)
-		return 0;
-
 	strcpy(instring_text, argv[2]);
-	check = checkInTxt(fp, instring_text);
-	if (check == 0)
+	fp = fopen(instring_text, "r");
+	if (fp == NULL)
+	{
+		cout << "\nText file is not exist!";
+		getchar();
 		return 0;
+	}
+	fclose(fp);
 
 	in_head.open(instring_music, ios::binary|ios::in); 
-	in_head.read(B,54); // С‡РёС‚Р°С‚СЊ СЂР°СЃС€РёСЂ Р·Р°РіРѕР»РѕРІРѕРє
+	in_head.read(B,54); // читать расширенный заголовок
 	in_head.close();
 
 	in.open(instring_music, ios::binary|ios::in);
-	in.ignore(4);
-	in.read((char*)&size_wav, 4); // С‡С‚РµРЅРёРµ СЂР°Р·РјРµСЂР° wav С„Р°Р№Р»Р°
-	in.ignore(50);
+	//in.ignore(4);
 
-	check = checkSize(size_wav); // РµСЃР»Рё СЂР°Р·РјРµСЂ == 0
-	if (check == 0)
+	unsigned char  SectionWave[4];
+
+	in.ignore(4); 
+	in.read((char*)&size_wav, 4);
+	for (int i = 0; i<4; i++)
+		in.read((char*)&SectionWave[i], 1); //проверяем секцию Wave
+
+	if ((SectionWave[0] !='W') || (SectionWave[1] != 'A') || (SectionWave[2] != 'V') || (SectionWave[3] != 'E')) 
+	{
+		cout << "File cann't be open!" << endl;
 		return 0;
+	}
+	in.ignore(46);
+
+	if (size_wav == 0)
+		cout << "Size of music file is 0!";
+		getchar();
+		return 0;	
 
 	char *Buffer = new char [size_wav];
 	Bits_Wav *_bits = new Bits_Wav[size_wav];
 
-	in.read(Buffer,size_wav); // С‡С‚РµРЅРёРµ С„Р°Р№Р»Р° РІ Buffer
+	in.read(Buffer,size_wav); // чтение файла в Buffer
 	in.close();
 
-	Byte_to_bits(size_wav, Buffer, _bits, NULL, 0); // В  РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёСЏ Р·РЅР°С‡РµРЅРёР№ РІ Р±СѓС„РµСЂРµ СЃ Р±Р°Р№С‚ РІ Р±РёС‚С‹
+	Byte_to_bits(size_wav, Buffer, _bits, NULL, 0); //   преобразования значений в буфере с байт в биты
 
 	intext.open(instring_text, ios::in); 
 	intext.seekg (0, std::ios::end);
-    size_text = intext.tellg(); // СЂР°Р·РјРµСЂ С‚РµРєСЃС‚Р°
+    size_text = intext.tellg(); // размер текста
 
 	check = cross_check(size_wav, size_text); // if size_text == 0 and size_text*4 >= size_wav
 	if (check == 0)
@@ -86,19 +98,19 @@ int main(int argc, char* argv[])
 	char *Buffer_text = new char [size_text];
 
 	intext.seekg(0);
-	intext.read(Buffer_text, size_text); // С‡С‚РµРЅРёРµ С„Р°Р№Р»Р° РІ Р±СѓС„РµСЂ_С‚РµРєСЃС‚
+	intext.read(Buffer_text, size_text); // чтение файла в буфер_текст
 	intext.close();
 
 	Bits_text *_bits_t = new Bits_text[size_text];
 	Bit_pack * b_p = new Bit_pack[size_text*4];
 
-	Byte_to_bits(size_text, Buffer_text, NULL, _bits_t, 1); // РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёСЏ Р·РЅР°С‡РµРЅРёР№ РІ Buffer_text РёР· Р±Р°Р№С‚РѕРІ РІ _bits_t
+	Byte_to_bits(size_text, Buffer_text, NULL, _bits_t, 1); // преобразования значений в Buffer_text из байтов в _bits_t
 
 	Make_pack_of_two(size_text, _bits_t, b_p);
 
-	Substitute_information_bits(size_text, b_p, _bits); // РїРѕРґСЃС‚Р°РІР»СЏРµРј РёРЅС„ Р±РёС‚С‹ РІ РЅР°РёРјРµРЅРµРµ Р·РЅР°С‡РёРјС‹Рµ Р±РёС‚С‹ РјСѓР·С‹РєР°Р»СЊРЅРѕРіРѕ С„Р°Р№Р»Р° 
+	Substitute_information_bits(size_text, b_p, _bits); // подставляем инф биты в наименее значимые биты музыкального файла 
 
-	Bits_to_bytes (size_text, Buffer, _bits); // РїСЂРµРѕРґР±СЂР°Р·РѕРІР°РЅРёРµ Р·РЅР°С‡РµРЅРёР№ РёР· Р±РёС‚РѕС‹ РІ Р±Р°Р№С‚С‹ in Buffer
+	Bits_to_bytes (size_text, Buffer, _bits); // преодбразование значений из битоы в байты in Buffer
 
 	if (strcmp(argv[1],argv[3]) == 0)
 	{
@@ -139,44 +151,11 @@ int main(int argc, char* argv[])
 	delete [] b_p;
 	return 0;
 }
-bool checkInWav(FILE *fp, char instring_music[120])
+
+
+void Byte_to_bits(int size, char Buffer[], Bits_Wav _bits[], Bits_text _bits_t[])
 {
-	fp = fopen(instring_music,"r");
-	if (fp == NULL)
-	{
-		cout << "\nMusic file is not exist!";
-		getchar();
-		return 0;
-	}
-	fclose(fp);
-	return 1;
-}
-bool checkInTxt(FILE *fp, char instring_text[120])
-{
-	fp = fopen(instring_text,"r");
-	if (fp == NULL)
-	{
-		cout << "\nText file is not exist!";
-		getchar();
-		return 0;
-	}
-	fclose(fp);
-	return 1;
-}
-bool checkSize(int size_wav)
-{
-	if (size_wav == 0)
-	{
-		cout << "Size of music file is 0!";
-		getchar();
-		return 0;
-	}
-	return 1;
-}
-void Byte_to_bits(int size, char Buffer[], Bits_Wav _bits[], Bits_text _bits_t[], int key)
-{
-	if (key == 0)
-	{
+	
 		for (int i = 0; i < size; i++)
 		{
 			for (int j = 0; j < 8; j++)
@@ -184,17 +163,7 @@ void Byte_to_bits(int size, char Buffer[], Bits_Wav _bits[], Bits_text _bits_t[]
 				_bits[i].bits[j] = Buffer[i] & ( 1 << j );
 			}
 		}
-	}
-	if (key == 1)
-	{
-		for (int i = 0; i < size; i++)
-		{
-			for (int j = 0; j < 8; j++)
-			{
-				_bits_t[i].bits[j] = Buffer[i] & ( 1 << j );
-			}
-		}
-	}
+	
 }
 void Bits_to_bytes (int size_text, char Buffer[], Bits_Wav _bits[])
 {
@@ -228,20 +197,4 @@ void Substitute_information_bits(int size_text, Bit_pack b_p[], Bits_Wav _bits[]
 		_bits[i].bits[0] = b_p[i].pack[0];
 		_bits[i].bits[1] = b_p[i].pack[1];
 	}
-}
-bool cross_check(int size_wav, int size_text)
-{
-	if (size_wav - 54 <= size_text*4)
-	{
-		cout << "Size of text is bigger than container!";
-		getchar();
-		return 0;
-	}
-	if (size_text == 0)
-	{
-		cout << "Size of text is 0!";
-		getchar();
-		return 0;
-	}
-	return 1;
 }
