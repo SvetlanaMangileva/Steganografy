@@ -18,10 +18,12 @@ struct Bit_pack
 	bool pack[2];
 };
 
+bool checkSize(int size_wav);
 void Byte_to_bits(int size, char Buffer[], Bits_Wav _bits[], Bits_text _bits_t[], int key);
 void Bits_to_bytes (int size_text, char Buffer[], Bits_Wav _bits[]);
 void Make_pack_of_two(int size_text, Bits_text _bits_t[], Bit_pack b_p[]);
 void Substitute_information_bits(int size_text, Bit_pack b_p[], Bits_Wav _bits[]);
+bool cross_check(int size_wav, int size_text);
 
 int main(int argc, char* argv[])
 {
@@ -39,6 +41,8 @@ int main(int argc, char* argv[])
 	bool check = 0, entry = 0;
 
 	strcpy(instring_music, argv[1]);
+	
+
 	strcpy(instring_text, argv[2]);
 	fp = fopen(instring_text, "r");
 	if (fp == NULL)
@@ -50,30 +54,29 @@ int main(int argc, char* argv[])
 	fclose(fp);
 
 	in_head.open(instring_music, ios::binary|ios::in); 
-	in_head.read(B,54); // читать расширенный заголовок
+	in_head.read(B,54); // читать расшир заголовок
 	in_head.close();
 
 	in.open(instring_music, ios::binary|ios::in);
 	//in.ignore(4);
-
+//!!!
 	unsigned char  SectionWave[4];
 
 	in.ignore(4); 
 	in.read((char*)&size_wav, 4);
 	for (int i = 0; i<4; i++)
-		in.read((char*)&SectionWave[i], 1); //проверяем секцию Wave
+		in.read((char*)&SectionWave[i], 1); // wave проверка
 
 	if ((SectionWave[0] !='W') || (SectionWave[1] != 'A') || (SectionWave[2] != 'V') || (SectionWave[3] != 'E')) 
 	{
-		cout << "File cann't be open!" << endl;
+		cout << "File doesn't have section WAVE" << endl;
 		return 0;
 	}
 	in.ignore(46);
-
-	if (size_wav == 0)
-		cout << "Size of music file is 0!";
-		getchar();
-		return 0;	
+//!!
+	check = checkSize(size_wav); // если размер == 0
+	if (check == 0)
+		return 0;
 
 	char *Buffer = new char [size_wav];
 	Bits_Wav *_bits = new Bits_Wav[size_wav];
@@ -153,9 +156,20 @@ int main(int argc, char* argv[])
 }
 
 
-void Byte_to_bits(int size, char Buffer[], Bits_Wav _bits[], Bits_text _bits_t[])
+bool checkSize(int size_wav)
 {
-	
+	if (size_wav == 0)
+	{
+		cout << "Size of music file is 0!";
+		getchar();
+		return 0;
+	}
+	return 1;
+}
+void Byte_to_bits(int size, char Buffer[], Bits_Wav _bits[], Bits_text _bits_t[], int key)
+{
+	if (key == 0)
+	{
 		for (int i = 0; i < size; i++)
 		{
 			for (int j = 0; j < 8; j++)
@@ -163,7 +177,17 @@ void Byte_to_bits(int size, char Buffer[], Bits_Wav _bits[], Bits_text _bits_t[]
 				_bits[i].bits[j] = Buffer[i] & ( 1 << j );
 			}
 		}
-	
+	}
+	if (key == 1)
+	{
+		for (int i = 0; i < size; i++)
+		{
+			for (int j = 0; j < 8; j++)
+			{
+				_bits_t[i].bits[j] = Buffer[i] & ( 1 << j );
+			}
+		}
+	}
 }
 void Bits_to_bytes (int size_text, char Buffer[], Bits_Wav _bits[])
 {
@@ -197,4 +221,20 @@ void Substitute_information_bits(int size_text, Bit_pack b_p[], Bits_Wav _bits[]
 		_bits[i].bits[0] = b_p[i].pack[0];
 		_bits[i].bits[1] = b_p[i].pack[1];
 	}
+}
+bool cross_check(int size_wav, int size_text)
+{
+	if (size_wav - 54 <= size_text*4)
+	{
+		cout << "Size of text is bigger than container!";
+		getchar();
+		return 0;
+	}
+	if (size_text == 0)
+	{
+		cout << "Size of text is 0!";
+		getchar();
+		return 0;
+	}
+	return 1;
 }
